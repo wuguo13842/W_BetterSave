@@ -61,3 +61,7 @@ msgstr "Allow GC on manual save"
 msgctxt "STRINGS.BETTERSAVE.OPTIONS.MANUALSAVEALLOWGC.TOOLTIP"
 msgid "On by default. Manual saves run a full GC at the end (vanilla behaviour). Turn off to skip it — save is faster but heap peak is higher. Restart not required."
 msgstr "On by default. Manual saves run a full GC at the end (vanilla behaviour).\nTurn off to skip it — save is faster but heap peak is higher.\nRestart not required."
+
+msgctxt "STRINGS.BETTERSAVE.OPTIONS.CATEGORIES.SAVE"
+msgid "System Save Logic"
+msgstr "System Save Logic"

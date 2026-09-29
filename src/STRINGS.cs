@@ -10,8 +10,9 @@
 				{
 					public static LocString GC = "GC (Requires Restart)";
 					public static LocString THUMBNAIL = "Thumbnail";
+					public static LocString SAVE = "System Save Logic";
 				}
-
+				
 				public static class MANUALGCMODE
 				{
 					public static LocString NAME = "Manual GC Management (Advanced)";

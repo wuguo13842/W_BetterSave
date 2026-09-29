@@ -61,3 +61,7 @@ msgstr "手动存档 GC"
 msgctxt "STRINGS.BETTERSAVE.OPTIONS.MANUALSAVEALLOWGC.TOOLTIP"
 msgid "On by default. Manual saves run a full GC at the end (vanilla behaviour). Turn off to skip it — save is faster but heap peak is higher. Restart not required."
 msgstr "默认开启，手动存档结束时执行一次全量 GC（原版行为）。\n关闭后跳过 GC，存档更快，但堆峰值会略高。\n低内存用户慎关。\n改动无需重启。"
+
+msgctxt "STRINGS.BETTERSAVE.OPTIONS.CATEGORIES.SAVE"
+msgid "System Save Logic"
+msgstr "系统保存逻辑"
