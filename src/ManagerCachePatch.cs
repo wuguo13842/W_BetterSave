@@ -12,7 +12,7 @@ namespace SaveOpt
         //                 存档体积与原版一致；省掉所有 EncodeTypeInfo 反射。
         // true  = 激进版：额外保留 serializationTemplatesByTypeName / serializationTemplatesByType。
         //                 存档目录会包含历史见过的所有类型（体积略大），但下次存档省掉 SerializationTemplate 重建。
-        private const bool Aggressive = true;
+        private const bool Aggressive = false;
 
         internal static bool Apply(Harmony harmony)
         {
