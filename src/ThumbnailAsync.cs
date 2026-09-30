@@ -45,21 +45,15 @@ namespace SaveOpt
 
         private static bool currentSaveIsAuto;
 
+        // ★ 新增：本局最近一次手动存档的 .sav 完整路径。
+        // UI 显示自动存档条目且其 png 不存在时，LoadColonyPreviewPatch 会把它
+        // 作为 savePath 交给 RetireColonyUtility.LoadColonyPreview，从而显示这张手动存档的 png。
+        private static string lastManualSavePath;
+
         // ───────── 统计 ─────────
 
         private static long previewCaptures;
         private static long previewSkips;
-
-        // 【已停用】lastManualPngPath 用于记录"最近一次手动存档的 png 路径"，
-        // 供自动存档时复制缩略图用。现已改为"自动存档不复制缩略图"，
-        // 因此该字段不再被写入，保留仅作历史记录。
-        // private static string lastManualPngPath;
-
-        // 【已停用】previewCopies / previewMisses 是"复制上一张缩略图"功能的统计计数，
-        // 该功能已停用，统计也一并停用。
-        // private static long previewCopies;
-        // private static long previewMisses;
-
         private static long asyncRequests;
         private static long asyncCompleted;
         private static long asyncFailed;
@@ -144,7 +138,7 @@ namespace SaveOpt
             }
             else
             {
-                Diag.Trace("[更好的存档] 缩略图捕获：手动存档走 AsyncGPUReadback（主线程不阻塞），自动存档跳过截图并复制上一张");
+                Diag.Trace("[更好的存档] 缩略图捕获：手动存档走 AsyncGPUReadback（主线程不阻塞），自动存档跳过截图");
             }
             return true;
         }
@@ -179,7 +173,7 @@ namespace SaveOpt
                 harmony.Patch(refresh, prefix: new HarmonyLib.HarmonyMethod(AccessTools.Method(typeof(ThumbnailAsync), "Refresh_Prefix")));
 
                 Diag.Trace("[更好的存档] 预览图分辨率降至 " + (PreviewScale * 100f).ToString("F0")
-                    + "%，自动存档默认跳过（可在选项里打开），不复制上一张");
+                    + "%，自动存档默认跳过截图，UI 显示时重定向到最近一次手动存档的图");
             }
             catch (Exception e)
             {
@@ -192,6 +186,12 @@ namespace SaveOpt
         internal static void NoteSaveKind(bool isAuto)
         {
             currentSaveIsAuto = isAuto;
+        }
+
+        // ★ 新增：供 LoadColonyPreviewPatch 读取
+        internal static string GetLastManualSavePath()
+        {
+            return lastManualSavePath;
         }
 
         // ───────── AsyncGPUReadback 路径（手动存档 / 自动存档+选项开启）─────────
@@ -366,91 +366,32 @@ namespace SaveOpt
 
         public static bool SaveColonyPreview_Prefix(string __0)
         {
-            // ───────── 改前（复制上一张缩略图的版本）─────────
-            // if (currentSaveIsAuto && !BetterSaveSettings.AutoSaveThumbnail) //自动保存禁止截图（可在选项里打开）
-            // {
-            //     // 自动存档：跳过截图。稍后 FinishSave 从最近一次手动存档的 png 复制。
-            //     previewSkips++;
-            //     return false;
-            // }
-            //
-            // // 手动存档：正常截图，并记下这张 png 作为后续自动存档的复制源。
-            // try
-            // {
-            //     lastManualPngPath = Path.ChangeExtension(__0, ".png");
-            // }
-            // catch (Exception)
-            // {
-            //     lastManualPngPath = null;
-            // }
-            //
-            // previewCaptures++;
-            // Diag.Trace("[更好的存档] 手动存档：真实捕获缩略图 -> " + Path.GetFileName(__0));
-            // return true;
-
-            // ───────── 改后（保留选项控制，仅移除"复制上一张"）─────────
-            // 自动存档 + 选项未开：直接跳过截图。不截图、不复制、不记录任何状态。
-            // 自动存档 + 选项已开：走下面正常截图流程（与手动存档等价）。
-            // 手动存档：走下面正常截图流程。
+            // 自动存档 + 选项未开：跳过截图。不生成 png，之后 UI 显示时由 LoadColonyPreviewPatch 重定向。
             if (currentSaveIsAuto && !BetterSaveSettings.AutoSaveThumbnail) //自动保存禁止截图（可在选项里打开）
             {
                 previewSkips++;
                 return false;
             }
 
-            // 正常截图。不再记录 lastManualPngPath，因为"复制上一张"功能已停用。
+            // ★ 手动存档：正常截图，并记录 .sav 完整路径，作为后续自动存档 UI 显示的重定向源。
+            //   自动存档（选项已开时）不记录，保证 lastManualSavePath 恒为"最近一次手动存档"。
+            if (!currentSaveIsAuto)
+            {
+                try
+                {
+                    lastManualSavePath = __0;
+                }
+                catch (Exception)
+                {
+                    lastManualSavePath = null;
+                }
+            }
+
             previewCaptures++;
             Diag.Trace("[更好的存档] " + (currentSaveIsAuto ? "自动(选项已开)" : "手动")
                 + "存档：真实捕获缩略图 -> " + Path.GetFileName(__0));
             return true;
         }
-
-        // ───────── 【已停用】FinishSave ─────────
-        // 该方法原本用于"自动存档从 lastManualPngPath 复制上一张 png"，
-        // 现在不再做任何复制，这个方法不再被调用。
-        // 保留仅作历史记录。
-        //
-        // internal static string FinishSave(string savePath, out string to)
-        // {
-        //     to = null;
-        //
-        //     // 手动存档：不复制，让异步截图流程自己写 png
-        //     if (!currentSaveIsAuto)
-        //     {
-        //         return null;
-        //     }
-        //
-        //     // 自动存档：从最近一次手动存档的 png 复制
-        //     if (string.IsNullOrEmpty(lastManualPngPath) || !File.Exists(lastManualPngPath))
-        //     {
-        //         previewMisses++;
-        //         return null;
-        //     }
-        //
-        //     try
-        //     {
-        //         to = Path.ChangeExtension(savePath, ".png");
-        //     }
-        //     catch (Exception)
-        //     {
-        //         to = null;
-        //     }
-        //
-        //     if (string.IsNullOrEmpty(to))
-        //     {
-        //         previewMisses++;
-        //         return null;
-        //     }
-        //
-        //     // 源和目标相同就不复制
-        //     if (string.Equals(lastManualPngPath, to, StringComparison.OrdinalIgnoreCase))
-        //     {
-        //         return null;
-        //     }
-        //
-        //     previewCopies++;
-        //     return lastManualPngPath;
-        // }
 
         // ★ 11b6670：签名 void → bool，末尾加 RT 复用逻辑
         public static bool Refresh_Prefix(Timelapser __instance)
@@ -811,10 +752,6 @@ namespace SaveOpt
                 + " 次，失败 " + asyncFailed + " 次"
                 + " ｜ 预览 RT 复用 " + rtReuses + " 次，重建 " + rtRebuilds + " 次"
                 + " ｜ 预览图：真实捕获 " + previewCaptures + " 次，自动跳过 " + previewSkips + " 次";
-
-            // 【已停用】改前末尾还有 "复制上一张" 统计，现随功能一并停用：
-            // + " ｜ 预览图：手动捕获 " + previewCaptures + " 次，自动跳过 " + previewSkips
-            // + " 次，复制上一张 " + previewCopies + " 次，无源图 " + previewMisses + " 次";
         }
     }
 }

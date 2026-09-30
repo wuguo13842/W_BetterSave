@@ -50,6 +50,7 @@ namespace SaveOpt
                 Mount(mounted, "GC门控", GcModeGate.Apply, harmony);
                 Mount(mounted, "体感监控", FrameWatch.Apply, harmony);
                 Mount(mounted, "缩略图后台", ThumbnailAsync.Apply, harmony);
+                Mount(mounted, "预览图重定向", LoadColonyPreviewPatch.Apply, harmony);   // ★ 新增
                 Mount(mounted, "序列化替换", SaveTransform.Apply, harmony);
                 GcTuner.Apply(harmony);
 
